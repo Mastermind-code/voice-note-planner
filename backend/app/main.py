@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app.api import plans, tasks, voice
 
-app = FastAPI(title="Voice Note Planner API", version="0.1.0")
+app = FastAPI(title="VoxPlan API", version="0.1.0")
 
 app.include_router(plans.router, prefix="/plans", tags=["plans"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])

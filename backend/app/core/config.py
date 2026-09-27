@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "Voice Note Planner API"
+    app_name: str = "VoxPlan API"
     database_url: str = "postgresql://user:password@localhost:5432/voice_note_planner"
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "changeme"

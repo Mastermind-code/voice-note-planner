@@ -1,4 +1,6 @@
-# Voice Note Planner
+# VoxPlan
+
+> Say it. VoxPlan plans it. Turn a spoken voice note into a structured, trackable plan.
 
 Turn a spoken voice note into a structured, trackable plan — available on mobile (Android/Google Play) and web, with reminders and manual editing built in.
 

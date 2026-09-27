@@ -1,6 +1,6 @@
-# PRD — Voice Note Planner
+# PRD — VoxPlan
 
-**Product Name / Application Title:** Voice Note Planner
+**Product Name / Application Title:** VoxPlan
 **Repo:** https://github.com/Mastermind-code/voice-note-planner (public)
 **Status:** Phase 1 prototype complete — single local page (`index.html`) opens in browser with test data only.
 
@@ -68,6 +68,7 @@ Local run (explicit for grader):
 ## 7. Decisions
 
 1. Keep FastAPI monolith for MVP vs splitting microservices — simpler local run.
+2. Product name: renamed from generic "Voice Note Planner" to **VoxPlan** — short, brandable, memorable for Google Play/web, tagline "Say it. VoxPlan plans it." Repo folder stays `voice-note-planner` for URL stability.
 2. Defer Flutter vs React Native decision to Phase 4; prototype is framework-free HTML so no rework.
 3. Local-first storage for prototype to satisfy "single local page is enough" + "test data only" security rule. Never commit `.env` or API keys (see `.gitignore`).
 
