@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Note Planner — Design Preview</title>
+<style>
+  :root {
+    --primary: #1A56DB;
+    --primary-hover: #1649B8;
+    --ink: #0F172A;
+    --muted: #64748B;
+    --bg: #F1F5F9;
+    --card: #FFFFFF;
+    --input-border: #94A3B8;
+    --success: #15803D;
+    --warning: #B45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+  .card { background: var(--card); border-radius: 14px; padding: 24px; margin: 16px 0; box-shadow: 0 1px 4px rgba(15,23,42,.08); }
+  h1 { font-size: 32px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 0 0 12px; }
+  p.sub { color: var(--muted); margin: 0 0 16px; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 12px; margin-top: 12px; }
+  .swatch { border-radius: 10px; overflow: hidden; border: 1px solid #E2E8F0; }
+  .swatch .c { height: 64px; }
+  .swatch .t { padding: 8px 10px; font-size: 14px; background: #fff; }
+  .swatch code { font-size: 13px; color: var(--muted); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary {
+    background: #fff; color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 10px 20px; font-size: 16px; font-weight: 600;
+    border-radius: 10px; cursor: pointer; margin-left: 10px;
+  }
+  label { font-weight: 600; display: block; margin: 12px 0 6px; }
+  input[type="text"], textarea, select {
+    width: 100%; font-size: 16px; font-family: inherit;
+    padding: 12px; border: 2px solid var(--input-border);
+    border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    outline: 3px solid rgba(26,86,219,.25);
+    border-color: var(--primary);
+  }
+  .note { font-size: 14px; color: var(--muted); }
+  .refine { border-left: 5px solid var(--primary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Voice Note Planner — Design Preview</h1>
+    <p class="sub">Design system preview: colors, typography, styled button, sample input. Refined per PRD Task 2 steering note (Inter 16px, #1A56DB contrast, accessible inputs).</p>
+  </div>
+
+  <div class="card">
+    <h2>1. Colors</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="c" style="background:#1A56DB"></div><div class="t">Primary<br><code>#1A56DB</code></div></div>
+      <div class="swatch"><div class="c" style="background:#0F172A"></div><div class="t">Ink<br><code>#0F172A</code></div></div>
+      <div class="swatch"><div class="c" style="background:#64748B"></div><div class="t">Muted<br><code>#64748B</code></div></div>
+      <div class="swatch"><div class="c" style="background:#F1F5F9"></div><div class="t">Background<br><code>#F1F5F9</code></div></div>
+      <div class="swatch"><div class="c" style="background:#15803D"></div><div class="t">Success<br><code>#15803D</code></div></div>
+      <div class="swatch"><div class="c" style="background:#B45309"></div><div class="t">Warning<br><code>#B45309</code></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Typography</h2>
+    <p><strong>Font:</strong> Inter, system fallback (-apple-system, Segoe UI, Roboto, Arial). <strong>Body:</strong> 16px / 1.6.</p>
+    <h1 style="margin-top:12px">Heading 32px — Plan your day from voice</h1>
+    <h2>Subheading 22px — Day / Week / Month views</h2>
+    <p>Body 16px — "Send a WhatsApp voice note, get tasks with dates, check them off, and get reminded. Test data only in this preview."</p>
+    <p class="note">Note 14px muted — used for helper text and timestamps.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. Styled Button</h2>
+    <button class="btn-primary" type="button">Create Plan</button>
+    <button class="btn-secondary" type="button">Upload Voice Note</button>
+    <p class="note" style="margin-top:10px">Primary: #1A56DB white bold 16px, 10px radius. Hover #1649B8. Secondary: white with #1A56DB outline.</p>
+  </div>
+
+  <div class="card">
+    <h2>4. Sample Input</h2>
+    <label for="sample-task">Task title</label>
+    <input id="sample-task" type="text" value="Buy groceries tomorrow morning" placeholder="e.g. Finish report by Friday">
+    <label for="sample-scope">Plan scope</label>
+    <select id="sample-scope"><option>day</option><option selected>week</option><option>month</option></select>
+    <label for="sample-notes">Voice transcript (mock)</label>
+    <textarea id="sample-notes" rows="3">Remind me to call mum, finish slides by Friday, and gym on Monday.</textarea>
+    <p class="note">Input border #94A3B8, focus ring #1A56DB — refined for contrast (see PRD refinement note).</p>
+  </div>
+
+  <div class="card refine">
+    <h2>Refinement applied (matches PRD.md Task 2 note)</h2>
+    <p>Requested refinement: clearer Inter 16px body, higher-contrast #1A56DB primary button with white bold text, darker #94A3B8 input borders with visible focus ring. This preview reflects all three changes.</p>
+  </div>
+</div>
+</body>
+</html>

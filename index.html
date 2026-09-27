@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Note Planner — Local Prototype (Phase 1)</title>
+<style>
+  :root { --primary:#1A56DB; --ink:#0F172A; --muted:#64748B; --bg:#F1F5F9; --card:#fff; --border:#94A3B8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:16px; background:var(--bg); color:var(--ink); }
+  header { background:var(--primary); color:#fff; padding:20px; }
+  header h1 { margin:0; font-size:24px; } header p { margin:4px 0 0; opacity:.9; font-size:14px; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:var(--card); border-radius:12px; padding:18px; margin:14px 0; box-shadow:0 1px 4px rgba(15,23,42,.08); }
+  .tabs button { border:2px solid var(--primary); background:#fff; color:var(--primary); padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:700; margin-right:8px; }
+  .tabs button.active { background:var(--primary); color:#fff; }
+  input, textarea, select { width:100%; font-size:16px; padding:10px; border:2px solid var(--border); border-radius:10px; font-family:inherit; }
+  input:focus, textarea:focus { outline:3px solid rgba(26,86,219,.25); border-color:var(--primary); }
+  .row { display:grid; grid-template-columns: 1fr 160px 130px; gap:10px; } @media(max-width:640px){ .row{grid-template-columns:1fr;} }
+  .btn { background:var(--primary); color:#fff; border:none; padding:12px 18px; font-weight:700; font-size:16px; border-radius:10px; cursor:pointer; }
+  .task { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid #E2E8F0; }
+  .task.done span.title { text-decoration:line-through; color:var(--muted); }
+  .pill { font-size:12px; background:#E0E9FF; color:var(--primary); padding:2px 10px; border-radius:20px; font-weight:700; }
+  .muted { color:var(--muted); font-size:14px; }
+  .actions button { margin-left:6px; }
+  .small-btn { border:1px solid var(--border); background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Voice Note Planner — Phase 1 Prototype</h1>
+  <p>Single local page • test data only • no sign-in / DB required • next: Phase 2 FastAPI + local PostgreSQL</p>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h2>1. Voice note → plan (mock)</h2>
+    <p class="muted">Paste a transcript (simulates WhatsApp voice transcription). Prototype extracts tasks locally with test logic.</p>
+    <label for="transcript"><strong>Transcript</strong></label>
+    <textarea id="transcript" rows="3">Remind me to call mum tomorrow, finish slides by Friday, gym on Monday morning</textarea>
+    <p><button class="btn" onclick="mockTranscribe()">Transcribe (mock) → Create tasks</button></p>
+    <p class="muted" id="mock-status">Uses mock parser — real STT + LLM in Phase 3.</p>
+    <label for="audio"><strong>Or attach audio (stored locally only, not uploaded)</strong></label>
+    <input id="audio" type="file" accept="audio/*">
+  </div>
+
+  <div class="card">
+    <h2>2. Plans — day / week / month</h2>
+    <div class="tabs">
+      <button data-scope="all" class="active" onclick="setScope('all',this)">All</button>
+      <button data-scope="day" onclick="setScope('day',this)">Day</button>
+      <button data-scope="week" onclick="setScope('week',this)">Week</button>
+      <button data-scope="month" onclick="setScope('month',this)">Month</button>
+    </div>
+    <div id="tasks" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Manual plan creation</h2>
+    <div class="row">
+      <input id="new-title" type="text" placeholder="e.g. Finish report by Friday">
+      <select id="new-scope"><option value="day">day</option><option value="week" selected>week</option><option value="month">month</option></select>
+      <button class="btn" onclick="addTask()">Add task</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4. Reminders (mock)</h2>
+    <p class="muted">Phase 1 shows mock reminders. Real Celery + Redis + FCM push in Phase 3.</p>
+    <ul id="reminders"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Progress</h2>
+    <p><strong>Phase reached: Phase 1 complete.</strong> Working single local page with seed test tasks, filter, add/edit/check-off, mock voice extraction, localStorage persistence.</p>
+    <p class="muted">Next: Phase 2 — wire to FastAPI (`backend/app/main.py`) + local PostgreSQL + JWT mock; then Phase 3 AI pipeline. See `docs/PRD.md`.</p>
+  </div>
+
+</div>
+<script>
+let scope = 'all';
+let tasks = JSON.parse(localStorage.getItem('vnp_tasks') || 'null') || [
+  {id:1, title:'Call mum tomorrow', scope:'day', done:false},
+  {id:2, title:'Finish slides by Friday', scope:'week', done:false},
+  {id:3, title:'Gym on Monday morning', scope:'week', done:true},
+  {id:4, title:'Plan monthly budget review', scope:'month', done:false}
+];
+function save(){ localStorage.setItem('vnp_tasks', JSON.stringify(tasks)); }
+function setScope(s, el){ scope=s; document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active')); el.classList.add('active'); render(); }
+function render(){
+  const box = document.getElementById('tasks'); box.innerHTML='';
+  const list = tasks.filter(t=> scope==='all' || t.scope===scope);
+  if(!list.length){ box.innerHTML='<p class="muted">No tasks in this view. Add one above.</p>'; }
+  list.forEach(t=>{
+    const d=document.createElement('div'); d.className='task'+(t.done?' done':'');
+    d.innerHTML=`<input type="checkbox" ${t.done?'checked':''} onchange="toggle(${t.id})"><span class="title" style="flex:1">${escapeHtml(t.title)}</span><span class="pill">${t.scope}</span><span class="actions"><button class="small-btn" onclick="editTask(${t.id})">Edit</button><button class="small-btn" onclick="delTask(${t.id})">Delete</button></span>`;
+    box.appendChild(d);
+  });
+  const r=document.getElementById('reminders'); r.innerHTML='';
+  tasks.filter(t=>!t.done).slice(0,3).forEach(t=>{ const li=document.createElement('li'); li.textContent=`Reminder (mock): "${t.title}" — due ${t.scope}`; r.appendChild(li); });
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function addTask(){
+  const inp=document.getElementById('new-title'); const sc=document.getElementById('new-scope').value;
+  if(!inp.value.trim()){ alert('Type a task title (test data only).'); return; }
+  tasks.push({id:Date.now(), title:inp.value.trim(), scope:sc, done:false}); inp.value=''; save(); render();
+}
+function toggle(id){ const t=tasks.find(x=>x.id===id); t.done=!t.done; save(); render(); }
+function delTask(id){ tasks=tasks.filter(x=>x.id!==id); save(); render(); }
+function editTask(id){ const t=tasks.find(x=>x.id===id); const v=prompt('Edit task (test data only):', t.title); if(v!==null&&v.trim()){ t.title=v.trim(); save(); render(); } }
+function mockTranscribe(){
+  const txt=document.getElementById('transcript').value;
+  const parts=txt.split(/,| and |;/).map(s=>s.trim()).filter(Boolean).slice(0,5);
+  parts.forEach(p=> tasks.push({id:Date.now()+Math.random(), title:p.charAt(0).toUpperCase()+p.slice(1), scope:'week', done:false}));
+  document.getElementById('mock-status').textContent=`Mock transcribed ${parts.length} task(s) from transcript (test logic, Phase 3 uses real STT+LLM).`;
+  save(); render();
+}
+render();
+</script>
+</body>
+</html>
