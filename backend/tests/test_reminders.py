@@ -24,3 +24,20 @@ def test_reminder_dry_run():
 def test_reminder_rejects_bad_email():
     response = client.post("/reminders/test", json={"to": "not-an-email"})
     assert response.status_code in (400, 422, 500)
+
+
+def test_whatsapp_dry_run():
+    response = client.post(
+        "/reminders/whatsapp/test",
+        json={"to": "+15550001111", "body": "VoxPlan test: Call mum tomorrow."},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "queued (test mode)"
+    assert data["mode"] == "dry-run"
+    assert data["id"] == "mock_whatsapp_test456"
+
+
+def test_whatsapp_rejects_bad_phone():
+    response = client.post("/reminders/whatsapp/test", json={"to": "abc"})
+    assert response.status_code == 422

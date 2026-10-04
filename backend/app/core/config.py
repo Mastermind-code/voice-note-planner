@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     speech_to_text_api_key: str = ""
     resend_api_key: str = ""
     resend_from: str = "onboarding@resend.dev"
+    whatsapp_token: str = ""
+    whatsapp_phone_number_id: str = ""
 
     class Config:
         env_file = ".env"
