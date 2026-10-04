@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "changeme"
     llm_api_key: str = ""
     speech_to_text_api_key: str = ""
+    resend_api_key: str = ""
+    resend_from: str = "onboarding@resend.dev"
 
     class Config:
         env_file = ".env"
