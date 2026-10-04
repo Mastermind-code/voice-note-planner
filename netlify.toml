@@ -1,0 +1,4 @@
+# VoxPlan — Netlify continuous deployment from GitHub.
+# Site serves the static prototype: index.html (app) + design.html (preview).
+[build]
+  publish = "."
