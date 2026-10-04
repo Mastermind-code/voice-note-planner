@@ -21,6 +21,16 @@ def send_plan_reminder(to: str, subject: str, body: str) -> dict:
     if not settings.resend_api_key:
         return {"id": "mock_msg_test123", "mode": "dry-run", "payload": payload}
     # Live mode (only runs when operator sets RESEND_API_KEY locally):
-    # POST https://api.resend.com/emails with Authorization: Bearer <key>.
-    # Kept uncalled in tests; test suite asserts dry-run path only.
-    return {"id": "live_disabled_in_tests", "mode": "live-deferred", "payload": payload}
+    import httpx
+
+    resp = httpx.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return {"id": resp.json().get("id", "unknown"), "mode": "live", "payload": payload}
