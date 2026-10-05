@@ -3,9 +3,10 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "VoxPlan API"
-    database_url: str = "postgresql://user:password@localhost:5432/voice_note_planner"
+    database_url: str = "sqlite:///./voxplan.db"
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "changeme"
+    jwt_expire_minutes: int = 60 * 24 * 7
     llm_api_key: str = ""
     speech_to_text_api_key: str = ""
     resend_api_key: str = ""

@@ -8,3 +8,7 @@ redis
 python-multipart
 pytest
 httpx
+email-validator
+alembic
+pyjwt
+pwdlib[argon2]

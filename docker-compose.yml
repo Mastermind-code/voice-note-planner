@@ -1,0 +1,35 @@
+# VoxPlan production-shaped stack. Local dev runs without Docker
+# (SQLite file + mock services); this file documents/creates parity
+# for staging/prod: PostgreSQL + Redis + API.
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: voxplan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: voxplan
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  api:
+    build: ./backend
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://voxplan:${POSTGRES_PASSWORD}@db:5432/voxplan
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+volumes:
+  pgdata:

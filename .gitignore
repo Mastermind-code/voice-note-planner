@@ -10,6 +10,9 @@ venv/
 # FastAPI / local
 *.log
 *.sqlite3
+*.db
+test_voxplan.db
+voxplan.db
 
 # OS / editors
 .DS_Store

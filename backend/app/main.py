@@ -1,8 +1,22 @@
 from fastapi import FastAPI
 
-from app.api import plans, reminders, tasks, voice
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="VoxPlan API", version="0.1.0")
+from fastapi import FastAPI
+
+from app.api import auth, plans, reminders, tasks, voice
+from app.core.db import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="VoxPlan API", version="0.1.0", lifespan=lifespan)
+
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 app.include_router(plans.router, prefix="/plans", tags=["plans"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
