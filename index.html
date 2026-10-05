@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoxPlan — Local Prototype (Phase 1)</title>
+<title>VoxPlan — Local Prototype (Phase 2 wired)</title>
 <style>
   :root { --primary:#1A56DB; --ink:#0F172A; --muted:#64748B; --bg:#F1F5F9; --card:#fff; --border:#94A3B8; }
   * { box-sizing:border-box; }
@@ -17,29 +17,45 @@
   input, textarea, select { width:100%; font-size:16px; padding:10px; border:2px solid var(--border); border-radius:10px; font-family:inherit; }
   input:focus, textarea:focus { outline:3px solid rgba(26,86,219,.25); border-color:var(--primary); }
   .row { display:grid; grid-template-columns: 1fr 160px 130px; gap:10px; } @media(max-width:640px){ .row{grid-template-columns:1fr;} }
+  .authrow { display:grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap:10px; } @media(max-width:640px){ .authrow{grid-template-columns:1fr;} }
   .btn { background:var(--primary); color:#fff; border:none; padding:12px 18px; font-weight:700; font-size:16px; border-radius:10px; cursor:pointer; }
+  .btn-ghost { background:#fff; color:var(--primary); border:2px solid var(--primary); padding:10px 16px; font-weight:700; font-size:16px; border-radius:10px; cursor:pointer; }
   .task { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid #E2E8F0; }
   .task.done span.title { text-decoration:line-through; color:var(--muted); }
   .pill { font-size:12px; background:#E0E9FF; color:var(--primary); padding:2px 10px; border-radius:20px; font-weight:700; }
   .muted { color:var(--muted); font-size:14px; }
   .actions button { margin-left:6px; }
   .small-btn { border:1px solid var(--border); background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .mode { display:inline-block; font-size:13px; font-weight:700; padding:3px 12px; border-radius:20px; background:#FEF3C7; color:#92400E; }
+  .mode.server { background:#DCFCE7; color:#166534; }
 </style>
 </head>
 <body>
 <header>
-  <h1>VoxPlan — Phase 1 Prototype</h1>
-  <p>Single local page • test data only • no sign-in / DB required • next: Phase 2 FastAPI + local PostgreSQL</p>
+  <h1>VoxPlan — Phase 2 Prototype</h1>
+  <p>Works offline with test data, or syncs to the real FastAPI backend when you log in.</p>
 </header>
 <div class="wrap">
 
   <div class="card">
-    <h2>1. Voice note → plan (mock)</h2>
-    <p class="muted">Paste a transcript (simulates WhatsApp voice transcription). Prototype extracts tasks locally with test logic.</p>
-    <label for="transcript"><strong>Transcript</strong></label>
+    <h2>0. Sync with API <span id="mode" class="mode">offline mock</span></h2>
+    <p class="muted">Start the backend (<code>uvicorn app.main:app</code> in <code>backend/</code>), then log in here to store plans in the real database instead of this browser only.</p>
+    <div class="authrow">
+      <input id="api-url" type="text" value="http://127.0.0.1:8000">
+      <input id="email" type="text" placeholder="you@example.com" value="test@example.com">
+      <input id="password" type="password" placeholder="password">
+      <button class="btn-ghost" onclick="doRegister()">Register</button>
+      <button class="btn" onclick="doLogin()">Log in</button>
+    </div>
+    <p class="muted" id="auth-status">Not logged in — using browser-only test data.</p>
+  </div>
+
+  <div class="card">
+    <h2>1. Voice note → plan</h2>
+    <p class="muted">Paste a transcript. Offline it splits locally; logged in it is stored as a voice plan in the database (mock extraction until Phase 3 AI).</p>
     <textarea id="transcript" rows="3">Remind me to call mum tomorrow, finish slides by Friday, gym on Monday morning</textarea>
-    <p><button class="btn" onclick="mockTranscribe()">Transcribe (mock) → Create tasks</button></p>
-    <p class="muted" id="mock-status">Uses mock parser — real STT + LLM in Phase 3.</p>
+    <p><button class="btn" onclick="mockTranscribe()">Transcribe → Create tasks</button></p>
+    <p class="muted" id="mock-status"></p>
     <label for="audio"><strong>Or attach audio (stored locally only, not uploaded)</strong></label>
     <input id="audio" type="file" accept="audio/*">
   </div>
@@ -65,27 +81,64 @@
   </div>
 
   <div class="card">
-    <h2>4. Reminders (mock)</h2>
-    <p class="muted">Phase 1 shows mock reminders. Real Celery + Redis + FCM push in Phase 3.</p>
+    <h2>4. Reminders</h2>
+    <p class="muted">Mock list for now. Logged-in users can also fire a test email via the API.</p>
     <ul id="reminders"></ul>
+    <p><button class="btn-ghost" onclick="testEmail()">Send test reminder email (API)</button> <span class="muted" id="email-status"></span></p>
   </div>
 
   <div class="card">
     <h2>Progress</h2>
-    <p><strong>Phase reached: Phase 1 complete.</strong> Working single local page with seed test tasks, filter, add/edit/check-off, mock voice extraction, localStorage persistence.</p>
-    <p class="muted">Next: Phase 2 — wire to FastAPI (`backend/app/main.py`) + local PostgreSQL + JWT mock; then Phase 3 AI pipeline. See `docs/PRD.md`.</p>
+    <p><strong>Phase 2 in progress:</strong> FastAPI + JWT auth + plans/tasks/voice CRUD backed by a real database, wired to this page via the Sync panel above. Offline mock remains as fallback.</p>
+    <p class="muted">Next: Phase 3 — real speech-to-text + LLM extraction, Celery + Redis reminders, FCM push. See <code>docs/PRD.md</code>.</p>
   </div>
 
 </div>
 <script>
 let scope = 'all';
+let mode = 'local';
+let server = { token: null, planId: null };
 let tasks = JSON.parse(localStorage.getItem('vnp_tasks') || 'null') || [
   {id:1, title:'Call mum tomorrow', scope:'day', done:false},
   {id:2, title:'Finish slides by Friday', scope:'week', done:false},
   {id:3, title:'Gym on Monday morning', scope:'week', done:true},
   {id:4, title:'Plan monthly budget review', scope:'month', done:false}
 ];
-function save(){ localStorage.setItem('vnp_tasks', JSON.stringify(tasks)); }
+const apiBase = () => document.getElementById('api-url').value.replace(/\/$/, '');
+const headers = () => ({'Content-Type':'application/json','Authorization':'Bearer '+server.token});
+function setMode(m, msg){
+  mode = m;
+  const el = document.getElementById('mode');
+  el.textContent = m === 'server' ? 'synced to API' : 'offline mock';
+  el.classList.toggle('server', m === 'server');
+  document.getElementById('auth-status').textContent = msg;
+}
+async function doRegister(){
+  const email = document.getElementById('email').value, password = document.getElementById('password').value;
+  const r = await fetch(apiBase()+'/auth/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password})});
+  document.getElementById('auth-status').textContent = r.ok ? 'Registered — now log in.' : 'Register failed: '+(await r.text()).slice(0,120);
+}
+async function doLogin(){
+  const email = document.getElementById('email').value, password = document.getElementById('password').value;
+  const form = new URLSearchParams({username:email, password});
+  const r = await fetch(apiBase()+'/auth/login', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:form});
+  if(!r.ok){ document.getElementById('auth-status').textContent = 'Login failed — is the backend running?'; return; }
+  server.token = (await r.json()).access_token;
+  const plans = await (await fetch(apiBase()+'/plans/', {headers:headers()})).json();
+  server.planId = plans.length ? plans[0].id : (await (await fetch(apiBase()+'/plans/', {method:'POST', headers:headers(), body:JSON.stringify({title:'My VoxPlan board', scope:'week'})})).json()).id;
+  setMode('server', 'Logged in as '+email+' — plans stored in the real database.');
+  await loadServer();
+}
+async function loadServer(){
+  const [plans, allTasks] = await Promise.all([
+    (await fetch(apiBase()+'/plans/', {headers:headers()})).json(),
+    (await fetch(apiBase()+'/tasks/', {headers:headers()})).json()
+  ]);
+  const scopeOf = Object.fromEntries(plans.map(p=>[p.id, p.scope]));
+  tasks = allTasks.map(t=>({id:t.id, title:t.title, scope:scopeOf[t.plan_id]||'week', done:t.is_done, server:true, plan_id:t.plan_id}));
+  render();
+}
+function save(){ if(mode==='local') localStorage.setItem('vnp_tasks', JSON.stringify(tasks)); }
 function setScope(s, el){ scope=s; document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active')); el.classList.add('active'); render(); }
 function render(){
   const box = document.getElementById('tasks'); box.innerHTML='';
@@ -93,27 +146,61 @@ function render(){
   if(!list.length){ box.innerHTML='<p class="muted">No tasks in this view. Add one above.</p>'; }
   list.forEach(t=>{
     const d=document.createElement('div'); d.className='task'+(t.done?' done':'');
-    d.innerHTML=`<input type="checkbox" ${t.done?'checked':''} onchange="toggle(${t.id})"><span class="title" style="flex:1">${escapeHtml(t.title)}</span><span class="pill">${t.scope}</span><span class="actions"><button class="small-btn" onclick="editTask(${t.id})">Edit</button><button class="small-btn" onclick="delTask(${t.id})">Delete</button></span>`;
+    d.innerHTML=`<input type="checkbox" ${t.done?'checked':''} onchange="toggle('${t.id}')">`
+      +`<span class="title" style="flex:1">${escapeHtml(t.title)}</span><span class="pill">${t.scope}</span>`
+      +`<span class="actions"><button class="small-btn" onclick="editTask('${t.id}')">Edit</button><button class="small-btn" onclick="delTask('${t.id}')">Delete</button></span>`;
     box.appendChild(d);
   });
   const r=document.getElementById('reminders'); r.innerHTML='';
   tasks.filter(t=>!t.done).slice(0,3).forEach(t=>{ const li=document.createElement('li'); li.textContent=`Reminder (mock): "${t.title}" — due ${t.scope}`; r.appendChild(li); });
 }
-function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function addTask(){
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function addTask(){
   const inp=document.getElementById('new-title'); const sc=document.getElementById('new-scope').value;
   if(!inp.value.trim()){ alert('Type a task title (test data only).'); return; }
+  if(mode==='server'){
+    await fetch(apiBase()+'/tasks/', {method:'POST', headers:headers(), body:JSON.stringify({plan_id:server.planId, title:inp.value.trim()})});
+    inp.value=''; await loadServer(); return;
+  }
   tasks.push({id:Date.now(), title:inp.value.trim(), scope:sc, done:false}); inp.value=''; save(); render();
 }
-function toggle(id){ const t=tasks.find(x=>x.id===id); t.done=!t.done; save(); render(); }
-function delTask(id){ tasks=tasks.filter(x=>x.id!==id); save(); render(); }
-function editTask(id){ const t=tasks.find(x=>x.id===id); const v=prompt('Edit task (test data only):', t.title); if(v!==null&&v.trim()){ t.title=v.trim(); save(); render(); } }
-function mockTranscribe(){
+async function toggle(id){
+  const t=tasks.find(x=>String(x.id)===String(id));
+  if(mode==='server'){ await fetch(apiBase()+`/tasks/${id}`, {method:'PATCH', headers:headers(), body:JSON.stringify({is_done:!t.done})}); await loadServer(); return; }
+  t.done=!t.done; save(); render();
+}
+async function delTask(id){
+  if(mode==='server'){ await fetch(apiBase()+`/tasks/${id}`, {method:'DELETE', headers:headers()}); await loadServer(); return; }
+  tasks=tasks.filter(x=>String(x.id)!==String(id)); save(); render();
+}
+async function editTask(id){
+  const t=tasks.find(x=>String(x.id)===String(id));
+  const v=prompt('Edit task (test data only):', t.title); if(v===null||!v.trim()) return;
+  if(mode==='server'){ await fetch(apiBase()+`/tasks/${id}`, {method:'PATCH', headers:headers(), body:JSON.stringify({title:v.trim()})}); await loadServer(); return; }
+  t.title=v.trim(); save(); render();
+}
+async function mockTranscribe(){
   const txt=document.getElementById('transcript').value;
-  const parts=txt.split(/,| and |;/).map(s=>s.trim()).filter(Boolean).slice(0,5);
-  parts.forEach(p=> tasks.push({id:Date.now()+Math.random(), title:p.charAt(0).toUpperCase()+p.slice(1), scope:'week', done:false}));
-  document.getElementById('mock-status').textContent=`Mock transcribed ${parts.length} task(s) from transcript (test logic, Phase 3 uses real STT+LLM).`;
+  if(mode==='server'){
+    const fd=new FormData();
+    fd.append('file', new File([txt], 'note.txt', {type:'text/plain'}));
+    fd.append('transcript', txt);
+    const r=await fetch(apiBase()+'/voice/ingest', {method:'POST', headers:{'Authorization':'Bearer '+server.token}, body:fd});
+    const body=await r.json();
+    document.getElementById('mock-status').textContent=`Stored as voice plan in database — ${body.tasks_created} task(s) (mock extraction until Phase 3).`;
+    await loadServer(); return;
+  }
+  txt.split(/,| and |;/).map(s=>s.trim()).filter(Boolean).slice(0,5)
+    .forEach(p=> tasks.push({id:Date.now()+Math.random(), title:p.charAt(0).toUpperCase()+p.slice(1), scope:'week', done:false}));
+  document.getElementById('mock-status').textContent='Split locally (offline mock). Log in to store in the database.';
   save(); render();
+}
+async function testEmail(){
+  if(mode!=='server'){ document.getElementById('email-status').textContent='Log in first.'; return; }
+  const email=document.getElementById('email').value;
+  const r=await fetch(apiBase()+'/reminders/test', {method:'POST', headers:headers(), body:JSON.stringify({to:email})});
+  const body=await r.json();
+  document.getElementById('email-status').textContent=`${body.status} (${body.mode}, id ${body.id}).`;
 }
 render();
 </script>
